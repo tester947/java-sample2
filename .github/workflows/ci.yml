@@ -25,6 +25,7 @@ jobs:
       uses: actions/setup-java@v2
       with:
         java-version: '8'  # Set Java 8 for the build
+        distribution: 'adoptopenjdk'  # Specify the distribution (e.g., 'adoptopenjdk', 'zulu', 'corretto')
 
     - name: Set up Gradle
       uses: gradle/wrapper-validation-action@v1
