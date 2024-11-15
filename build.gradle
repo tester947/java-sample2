@@ -1,29 +1,52 @@
 apply plugin: 'java'
 apply plugin: 'maven-publish'
+apply plugin: 'jacoco'  // Apply the JaCoCo plugin
 
 group = 'com.github.jitpack'
 version = '2.0'
 
-sourceCompatibility = 1.8 // java 8
+sourceCompatibility = 1.8 // Java 8
 targetCompatibility = 1.8
 
 repositories {
-  mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-  implementation 'com.google.guava:guava:29.0-jre'
+    implementation 'com.google.guava:guava:29.0-jre'
+    testImplementation 'junit:junit:4.13.2' // Add a test dependency if you don't have one already
 }
 
 java {
-	withSourcesJar()
-	withJavadocJar()
+    withSourcesJar()
+    withJavadocJar()
+}
+
+jacoco {
+    toolVersion = '0.8.8' // Set the JaCoCo version, you can change it if needed
+}
+
+test {
+    useJUnitPlatform() // If using JUnit 5, otherwise use the appropriate test framework
+    finalizedBy jacocoTestReport // Ensure report is generated after tests
+}
+
+task jacocoTestReport(type: JacocoReport) {
+    dependsOn test // Ensure tests are executed before generating the report
+    reports {
+        xml.enabled true  // Enable XML report (for CI tools)
+        html.enabled true // Enable HTML report 
+	csv.enabled true  // Enable CSV report
+    }
+    sourceDirectories.setFrom(files('src/main/java'))
+    classDirectories.setFrom(files('build/classes/java/main'))
+    executionData.setFrom(files('build/jacoco/test.exec'))
 }
 
 publishing {
     publications {
         maven(MavenPublication) {
-		from components.java
+            from components.java
         }
     }
 }
