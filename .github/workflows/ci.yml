@@ -53,7 +53,7 @@ jobs:
 
     - name: Upload JaCoCo reports as artifacts (if "jacocoTestReport" task is selected)
       if: ${{ github.event.inputs.build-task == 'jacocoTestReport' }}
-      uses: github/upload-artifact@v3  # Use the latest version (v3) of the upload-artifact action
+      uses: actions/upload-artifact@v3  # Correct action name (actions/upload-artifact@v3)
       with:
         name: jacoco-reports
         path: build/reports/jacoco/test  # Path where JaCoCo reports are stored
