@@ -1,0 +1,65 @@
+name: Gradle Build and JaCoCo Coverage Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      build-task:
+        description: 'Select the build task to run (e.g., build, test, jacocoTestReport)'
+        required: true
+        default: 'build'  # Default task if no input is selected
+        type: choice
+        options:
+          - build
+          - test
+          - jacocoTestReport
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # The environment to run the job in (can be ubuntu-latest, windows-latest, macos-latest)
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2  # Checks out the code from the repository
+
+    - name: Set up JDK 8
+      uses: actions/setup-java@v2
+      with:
+        java-version: '8'  # Set Java 8 for the build
+
+    - name: Set up Gradle
+      uses: gradle/wrapper-validation-action@v1
+      with:
+        gradle-version: '7.3.3'  # Ensure the Gradle version matches the one in your wrapper
+
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Print repository and branch info
+      run: |
+        echo "Repository name: ${{ github.repository }}"
+        echo "Branch name: ${{ github.ref_name }}"  # Refers to the branch name from GitHub Actions context
+
+    - name: Run selected Gradle task
+      run: ./gradlew ${{ github.event.inputs.build-task }}  # Run the task selected in the manual trigger
+
+    - name: Run tests and generate JaCoCo reports (if "jacocoTestReport" task is selected)
+      if: ${{ github.event.inputs.build-task == 'jacocoTestReport' }}
+      run: ./gradlew jacocoTestReport  # This runs the tests and generates the JaCoCo reports
+
+    - name: Upload JaCoCo reports as artifacts (if "jacocoTestReport" task is selected)
+      if: ${{ github.event.inputs.build-task == 'jacocoTestReport' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: jacoco-reports
+        path: build/reports/jacoco/test  # Path where JaCoCo reports are stored
+
+    - name: Display JaCoCo HTML report link (if "jacocoTestReport" task is selected)
+      if: ${{ github.event.inputs.build-task == 'jacocoTestReport' }}
+      run: |
+        echo "JaCoCo HTML report is available at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts"
+        echo "You can download the artifact from the above link"
