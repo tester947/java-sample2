@@ -25,7 +25,7 @@ jobs:
       uses: actions/setup-java@v2
       with:
         java-version: '8'  # Use Java 8
-        distribution: 'adoptium'  # Use Adoptium (formerly AdoptOpenJDK)
+        distribution: 'adoptopenjdk'  # Correct distribution for Java 8 (Adoptium)
 
     - name: Set up Gradle
       uses: gradle/wrapper-validation-action@v1
