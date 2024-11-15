@@ -1,57 +1,61 @@
-apply plugin: 'java'
-apply plugin: 'maven-publish'
-apply plugin: 'jacoco'  // Apply the JaCoCo plugin
+name: Gradle Build, Test, and JaCoCo Coverage
 
-group = 'com.github.jitpack'
-version = '2.0'
+on:
+  workflow_dispatch:
+    inputs:
+      build-task:
+        description: 'Select the build task to run (e.g., build, test, jacocoTestReport)'
+        required: true
+        default: 'build'
+        type: choice
+        options:
+          - build
+          - test
+          - jacocoTestReport
 
-sourceCompatibility = 1.8 // Java 8
-targetCompatibility = 1.8
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Use the latest Ubuntu runner
 
-repositories {
-    mavenCentral()
-}
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2  # Checkout the code from the repository
 
-dependencies {
-    implementation 'com.google.guava:guava:29.0-jre'
-    testImplementation 'junit:junit:4.13.2' // Add a test dependency if you don't have one already
-}
+    - name: Set up JDK 8
+      uses: actions/setup-java@v2
+      with:
+        java-version: '8'  # Use Java 8
+        distribution: 'adoptium'  # Use Adoptium (formerly AdoptOpenJDK)
 
-java {
-    withSourcesJar()
-    withJavadocJar()
-}
+    - name: Set up Gradle
+      uses: gradle/wrapper-validation-action@v1
+      with:
+        gradle-version: '7.3.3'  # Match the Gradle version in your project wrapper
 
-jacoco {
-    toolVersion = '0.8.8' // Set the JaCoCo version, you can change it if needed
-}
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v2
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
 
-test {
-    useJUnitPlatform() // If using JUnit 5, otherwise use the appropriate test framework
-    finalizedBy jacocoTestReport // Ensure report is generated after tests
-}
+    - name: Run selected Gradle task
+      run: ./gradlew ${{ github.event.inputs.build-task }}  # Run the selected task
 
-task jacocoTestReport(type: JacocoReport) {
-    dependsOn test // Ensure tests are executed before generating the report
-    reports {
-        xml.enabled true  // Enable XML report (for CI tools)
-        html.enabled true // Enable HTML report 
-	csv.enabled true  // Enable CSV report
-    }
-    sourceDirectories.setFrom(files('src/main/java'))
-    classDirectories.setFrom(files('build/classes/java/main'))
-    executionData.setFrom(files('build/jacoco/test.exec'))
-}
+    - name: Run tests and generate JaCoCo reports (if "jacocoTestReport" task is selected)
+      if: ${{ github.event.inputs.build-task == 'jacocoTestReport' }}
+      run: ./gradlew jacocoTestReport  # Run the jacocoTestReport task
 
-publishing {
-    publications {
-        maven(MavenPublication) {
-            from components.java
-        }
-    }
-}
+    - name: Upload JaCoCo reports as artifacts (if "jacocoTestReport" task is selected)
+      if: ${{ github.event.inputs.build-task == 'jacocoTestReport' }}
+      uses: actions/upload-artifact@v3  # Upload artifacts
+      with:
+        name: jacoco-reports
+        path: build/reports/jacoco/test  # Path where JaCoCo reports are stored
 
-wrapper {
-    gradleVersion = "7.3.3"
-    distributionType = Wrapper.DistributionType.ALL
-}
+    - name: Display JaCoCo HTML report link (if "jacocoTestReport" task is selected)
+      if: ${{ github.event.inputs.build-task == 'jacocoTestReport' }}
+      run: |
+        echo "JaCoCo HTML report is available at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts"
+        echo "You can download the artifact from the above link"
