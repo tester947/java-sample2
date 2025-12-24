@@ -32,7 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: qa
     # Only run Prod when on main (optional guard)
-    if: github.ref == 'refs/heads/main'
     environment:
       name: production
       # url: https://prod.example.com
