@@ -1,0 +1,28 @@
+name: Two-Job Time Example
+ 
+on:
+  workflow_dispatch:
+ 
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    outputs:
+      # Expose the step output as a job output to be used by other jobs
+      now_utc: ${{ steps.now.outputs.now }}
+    steps:
+      - name: Get UTC time in ISO 8601
+        id: now
+        shell: bash
+        run: |
+          NOW_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "Captured time: $NOW_UTC"
+          # Set as step output (preferred modern way)
+          echo "now=$NOW_UTC" >> "$GITHUB_OUTPUT"
+ 
+  consume:
+    runs-on: ubuntu-latest
+    needs: produce
+    steps:
+      - name: Print the variable from previous job
+        run: |
+          echo "Time from job output: ${{ needs.produce.outputs.now_utc }}"
